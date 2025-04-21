@@ -1,0 +1,30 @@
+[project]
+name = "xmpy"     # 包名
+version = "1.0.0"       # 版本
+authors = [
+  { name="bhzy", email="2024305928@qq.com" },        # 用户名和邮箱
+]
+description = "专为中文母语开发者打造的量化交易研发框架。"     # 搜索结果页显示的单行内容   包的简述
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
+
+# 添加第三方依赖包
+dependencies = [
+  "numpy >= 2.2.3",
+  "ta-lib >= 0.6.0",
+  "tzlocal >= 5.3",
+
+  "xmpy_ctp >= 1.0.0",
+  "xmpy_sqlite >= 1.0.0",
+  "xmpy_ctastrategy >= 1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/InkAbyss/xmpy"      # 项目地址
+Issues = "https://github.com/InkAbyss/xmpy/issues"
