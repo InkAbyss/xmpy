@@ -63,6 +63,9 @@ pip install TA-Lib
 # 运行单个策略
 # 运行所有策略的示例代码在本项目github下：运行示例 文件夹
 
+# 示例策略 存储在：xmpy_ctastrategy\策略文件夹
+# 用户自行开发的策略可以在用户目录下创建`策略文件夹`并放置策略：C:\Users\xxx\策略文件夹
+
 import multiprocessing
 import sys
 from time import sleep
