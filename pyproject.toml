@@ -1,6 +1,6 @@
 [project]
 name = "xmpy"     # 包名
-version = "1.0.0"       # 版本
+version = "1.0.1"       # 版本
 authors = [
   { name="bhzy", email="2024305928@qq.com" },        # 用户名和邮箱
 ]
