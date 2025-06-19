@@ -28,3 +28,6 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/InkAbyss/xmpy"      # 项目地址
 Issues = "https://github.com/InkAbyss/xmpy/issues"
+
+[tool.setuptools.packages.find]
+include = ["xmpy*"]
