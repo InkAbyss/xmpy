@@ -4,10 +4,11 @@ from pathlib import Path
 from typing import Callable, Optional, Union, Tuple
 from decimal import Decimal
 
+
 import numpy as np
 
 import talib
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from .模块_常数 import 类_周期
 from .模块_对象 import 类_K线数据,类_行情数据
 
@@ -116,6 +117,13 @@ def 四舍五入到指定值(数值: float, 目标值: float) -> float:
     四舍五入结果: float = float(int(round(数值 / 目标值)) * 目标值)
     return 四舍五入结果
 
+def 提取合约前缀(合约代码: str) -> str:
+    """从合约代码中提取品种部分（去掉数字）"""
+    # 使用正则表达式匹配字母部分
+    match = re.match(r'([a-zA-Z]+)', 合约代码)
+    if match:
+        return match.group(1)
+
 class 类_K线生成器:
     """
     K线合成器功能：
@@ -153,49 +161,36 @@ class 类_K线生成器:
         if self.周期类型 == 类_周期.日线 and not self.日结束时间:
             raise ValueError("日线合成必须指定收盘时间")
 
-    def 更新Tick(self, tick: 类_行情数据) -> None:
-        """处理Tick更新"""
-        新周期标志 = False
-
-        if not tick.最新价:
+    def _更新K线数据(self, tick: 类_行情数据, 是否新周期=False) -> None:
+        """将tick信息更新进当前K线"""
+        if not self.当前K线:
             return
 
-        if not self.当前K线:
-            新周期标志 = True
-        elif (
-                (self.当前K线.时间戳.minute != tick.时间戳.minute)
-                or (self.当前K线.时间戳.hour != tick.时间戳.hour)
-        ):
-            self.当前K线.时间戳 = self.当前K线.时间戳.replace(second=0, microsecond=0)
-            self.K线回调(self.当前K线)
-            新周期标志 = True
+        if 是否新周期:
+            if self.最后Tick缓存:
+                成交量变动 = max(tick.成交量 - self.最后Tick缓存.成交量, 0)
+                self.当前K线.成交量 += 成交量变动
 
-        if 新周期标志:
-            self.当前K线 = 类_K线数据(
-                代码=tick.代码,
-                交易所=tick.交易所,
-                周期=类_周期.一分钟,
-                时间戳=tick.时间戳,
-                网关名称=tick.网关名称,
-                开盘价=tick.最新价,
-                最高价=tick.最新价,
-                最低价=tick.最新价,
-                收盘价=tick.最新价,
-                持仓量=tick.持仓量
-            )
-        else:
-            self.当前K线.最高价 = max(self.当前K线.最高价, tick.最新价)
-            if tick.最高价 > self.最后Tick缓存.最高价:
-                self.当前K线.最高价 = max(self.当前K线.最高价, tick.最高价)
+                成交额变动 = max(tick.成交额 - self.最后Tick缓存.成交额, 0)
+                self.当前K线.成交额 += 成交额变动
 
-            self.当前K线.最低价 = min(self.当前K线.最低价, tick.最新价)
-            if tick.最低价 < self.最后Tick缓存.最低价:
-                self.当前K线.最低价 = min(self.当前K线.最低价, tick.最低价)
+            self.最后Tick缓存 = tick
+            return
 
-            self.当前K线.收盘价 = tick.最新价
-            self.当前K线.持仓量 = tick.持仓量
-            self.当前K线.时间 = tick.时间戳
+            # 更新极值时同时考虑tick的high/low字段
+        self.当前K线.最高价 = max(self.当前K线.最高价, tick.最新价)
+        if tick.最高价 > self.最后Tick缓存.最高价:
+            self.当前K线.最高价 = max(self.当前K线.最高价, tick.最高价)
 
+        self.当前K线.最低价 = min(self.当前K线.最低价, tick.最新价)
+        if tick.最低价 < self.最后Tick缓存.最低价:
+            self.当前K线.最低价 = min(self.当前K线.最低价, tick.最低价)
+
+        self.当前K线.收盘价 = tick.最新价
+        self.当前K线.持仓量 = tick.持仓量
+        self.当前K线.时间戳 = tick.时间戳
+
+        # 处理成交量（需考虑tick之间可能的重传情况）
         if self.最后Tick缓存:
             成交量变动 = max(tick.成交量 - self.最后Tick缓存.成交量, 0)
             self.当前K线.成交量 += 成交量变动
@@ -204,6 +199,81 @@ class 类_K线生成器:
             self.当前K线.成交额 += 成交额变动
 
         self.最后Tick缓存 = tick
+
+    def 更新Tick(self, tick: 类_行情数据) -> None:
+        """处理Tick更新"""
+        新周期标志 = False
+        if not tick.最新价:
+            return
+
+        # 生成基准时间戳（自然分钟结束点）
+        基准时间 = tick.时间戳.replace(second=0, microsecond=0) + timedelta(minutes=1)
+
+        # 新周期判断条件
+        if not self.当前K线:  # 初始化
+            新周期标志 = True
+        else:
+            if (self.当前K线.时间戳.minute != tick.时间戳.minute) or (self.当前K线.时间戳.hour != tick.时间戳.hour):
+                新周期标志 = True
+
+        收盘时间集 = {(10, 15), (11, 30), (15, 0), (2, 30)}
+
+        # 收盘tick应直接更新K线并推送
+        if self.当前K线 and (tick.时间戳.hour, tick.时间戳.minute) in 收盘时间集:
+            self._更新K线数据(tick)
+            self.当前K线.时间戳 = 基准时间 - timedelta(minutes=1)
+
+            # # 大商所15点收盘后，过3-4分钟还会推送一条tick数据，将它归类到15点这根K线
+            # if self.当前K线.交易所.value == 'DCE' and (tick.时间戳.hour, tick.时间戳.minute) in (15, 0):
+            #     self.大商所收盘计数 += 1
+            #     if self.大商所收盘计数 == 2:
+            #         print('=== 推送大商所收盘时间集')
+            #         self.K线回调(self.当前K线)
+            #         self.当前K线 = None
+            #         self.大商所收盘计数 = 0
+            #         return
+            #     else:
+            #         return
+
+            self.K线回调(self.当前K线)
+            self.当前K线 = None
+            return
+
+        特殊收盘时间集 = {(23, 0)}
+        if self.当前K线 and self.当前K线.交易所.value != 'SHFE' and (
+        tick.时间戳.hour, tick.时间戳.minute) in 特殊收盘时间集:
+            self._更新K线数据(tick)
+            self.当前K线.时间戳 = 基准时间 - timedelta(minutes=1)
+
+            print('=== 推送特殊收盘时间集')
+            self.K线回调(self.当前K线)
+            self.当前K线 = None
+            return
+
+        if 新周期标志:
+            # 先保存旧K线（如果有）
+            if self.当前K线:
+                self.当前K线.时间戳 = 基准时间 - timedelta(minutes=1)  # 显示为周期起始时间
+                self.K线回调(self.当前K线)
+
+            # 创建新K线（开盘价用第一个有效tick的最新价）
+            self.当前K线 = 类_K线数据(
+                代码=tick.代码,
+                交易所=tick.交易所,
+                周期=类_周期.一分钟,
+                时间戳=基准时间 - timedelta(minutes=1),  # K线起始时间
+                网关名称=tick.网关名称,
+                开盘价=tick.最新价,
+                最高价=tick.最新价,  # 初始化用tick的最高价
+                最低价=tick.最新价,  # 初始化用tick的最低价
+                收盘价=tick.最新价,
+                持仓量=tick.持仓量,
+                成交量=0,
+                成交额=0
+            )
+            self._更新K线数据(tick, 是否新周期=True)
+        else:
+            self._更新K线数据(tick)
 
     def 更新K线(self, bar: 类_K线数据) -> None:
         """处理K线更新"""
@@ -217,7 +287,7 @@ class 类_K线生成器:
     def _处理分钟窗口(self, bar: 类_K线数据) -> None:
         """分钟级窗口处理"""
         if not self.窗口K线缓存:
-            基准时间: datetime = bar.时间戳.replace(second=0, microsecond=0)
+            基准时间: datetime = bar.时间戳.replace(second=0, microsecond=0) + timedelta(minutes=1)
             self.窗口K线缓存 = 类_K线数据(
                 代码=bar.代码,
                 交易所=bar.交易所,
@@ -236,7 +306,7 @@ class 类_K线生成器:
         self.窗口K线缓存.成交额 += bar.成交额
         self.窗口K线缓存.持仓量 = bar.持仓量
 
-        if not (bar.时间戳.minute + 1) % self.窗口大小:
+        if not (bar.时间戳.minute) % self.窗口大小:
             self.窗口回调(self.窗口K线缓存)
             self.窗口K线缓存 = None
 

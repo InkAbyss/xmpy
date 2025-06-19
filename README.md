@@ -8,53 +8,30 @@
 
 为满足中文开发者对代码可读性与可维护性的需求，本项目以[vnpy-3.9.4](https://github.com/vnpy/vnpy/tree/3.9.4)为基础，进行了全面优化与重构。
 
-## 安装指南
-#### **1. 安装 `xmpy`**
+## 接口
+* [CTP（ctp）](https://github.com/InkAbyss/xmpy_ctp)：国内期货、期权
 
-运行以下命令安装 `xmpy`：
+* TTS_CTP：openctp，提供国内期货（仿真），7*24小时数据（暂未上传）
 
+## 应用
+* [xmpy_ctastrategy](https://github.com/InkAbyss/xmpy_ctastrategy)：CTA策略引擎模块
+
+* 行情记录模块：根据需求实时录制Tick或者K线行情到数据库中（暂未上传）
+
+## 数据库接口
+* [xmpy_sqlite](https://github.com/InkAbyss/xmpy_sqlite)：轻量级单文件数据库，无需安装和配置数据服务程序
+
+## 安装
 ```
+1，需要先安装ta-lib
+pip install TA-Lib
+
+安装失败，可下载ta-lib安装包文件夹中的whl文件
+pip install .\ta_lib-0.6.0-cp312-cp312-win_amd64.whl
+
+2，安装xmpy
 pip install xmpy
 ```
-
-> **注意**：
->
-> - 如果安装成功，无需继续后续步骤。
-> - 如果安装失败（可能因缺少 `TA-Lib` 依赖），请继续下一步。
-
-#### **2. 安装 `TA-Lib`（可选）**
-
-如果 xmpy 安装失败，需先安装 `TA-Lib`：
-
-```
-pip install TA-Lib
-```
-
-> **注意**：
->
-> - 如果此命令安装失败，请尝试手动安装 `.whl` 文件。
-
-------
-
-#### **3. 手动安装 `TA-Lib` 的 `.whl` 文件**
-
-1. **下载 `.whl` 文件**
-
-   - 前往本项目的 GitHub 仓库，进入 `ta-lib安装包文件夹`。
-   - 下载适合您 Python 版本和系统的 .whl 文件（例如：`ta_lib-0.6.0-cp312-cp312-win_amd64.whl`）。
-
-2. **安装 `.whl` 文件**
-    在命令行中执行以下命令（确保路径正确）：
-
-   ```
-   pip install .\ta_lib-0.6.0-cp312-cp312-win_amd64.whl
-   ```
-
-> **注意**：
->
-> - `cp312` 表示适用于 Python 3.12，`win_amd64` 表示 Windows 64 位系统。
-> - 如需其他版本，请前往 [ta-lib项目地址](https://github.com/cgohlke/talib-build/releases) 下载。
-
 ## 使用
 1，在[SimNow](https://www.simnow.com.cn)注册CTP仿真账号，并在该页面获取经纪商代码以及交易行情服务器地址。
 
@@ -62,9 +39,6 @@ pip install TA-Lib
 ```
 # 运行单个策略
 # 运行所有策略的示例代码在本项目github下：运行示例 文件夹
-
-# 示例策略 存储在：xmpy_ctastrategy\策略文件夹
-# 用户自行开发的策略可以在用户目录下创建`策略文件夹`并放置策略：C:\Users\xxx\策略文件夹
 
 import multiprocessing
 import sys
@@ -140,23 +114,18 @@ def 运行子进程():
 
     # 创建主引擎
     主引擎 = 类_主引擎(事件引擎)
-    主引擎.添加网关(类_CTP网关)
+    网关 = 主引擎.添加网关(类_CTP网关)
 
     # 添加CTA应用
     CTA引擎 = 主引擎.添加应用(类_CTA策略应用)
     主引擎.记录日志("主引擎创建成功")
 
-    # 注册日志事件监听
-    日志引擎 = 主引擎.获取引擎("日志")
-    事件引擎.注册类型处理器(事件类型_CTA日志, 日志引擎.处理日志事件)
-    主引擎.记录日志("注册日志事件监听")
-
     # 连接CTP接口
     主引擎.连接网关(ctp_设置, "CTP")
     主引擎.记录日志("连接CTP接口")
-
-    # 等待10秒确保连接成功
-    sleep(10)
+    
+    while not 网关.交易接口.合约就绪:
+        sleep(1)
 
     # 初始化CTA引擎
     CTA引擎.初始化引擎()

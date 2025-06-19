@@ -7,7 +7,6 @@ from typing import Optional
 
 # from .constant import Direction 方向, Exchange 交易所, Interval 周期, Offset 开平, Status 状态, Product 产品类型, OptionType 期权类型, OrderType 委托类型
 from xmpy.包_交易核心.模块_常数 import 类_方向,类_交易所,类_周期,类_开平,类_状态,类_产品类型,类_期权类型,类_委托类型
-
 活跃状态集合 = set([类_状态.提交中, 类_状态.未成交, 类_状态.部分成交])
 
 @dataclass
@@ -68,7 +67,7 @@ class 类_行情数据(基础数据):
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.唯一标识: str = f"{self.代码}.{self.交易所.name}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.name}"
 
 @dataclass
 class 类_K线数据(基础数据):
@@ -89,16 +88,15 @@ class 类_K线数据(基础数据):
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.唯一标识: str = f"{self.代码}.{self.交易所.value}"
-
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
 
 @dataclass
-class 类_委托数据(基础数据):
+class 类_订单数据(基础数据):
     """委托状态跟踪数据"""
 
     代码: str
     交易所: 类_交易所
-    委托编号: str
+    订单编号: str
 
     类型: 类_委托类型 = 类_委托类型.限价单
     方向: 类_方向 = None
@@ -112,8 +110,8 @@ class 类_委托数据(基础数据):
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.唯一标识: str = f"{self.代码}.{self.交易所.value}"
-        self.订单唯一标识: str = f"{self.网关名称}.{self.委托编号}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
+        self.网关_订单编号: str = f"{self.网关名称}.{self.订单编号}"
 
     def 是否活跃(self) -> bool:
         """检查订单是否处于活跃状态"""
@@ -122,7 +120,7 @@ class 类_委托数据(基础数据):
     def 创建撤单请求(self) -> "类_撤单请求":
         """生成撤单请求对象"""
         return 类_撤单请求(
-            订单编号=self.委托编号,
+            订单编号=self.订单编号,
             代码=self.代码,
             交易所=self.交易所
         )
@@ -145,9 +143,9 @@ class 类_成交数据(基础数据):
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.唯一标识: str = f"{self.代码}.{self.交易所.value}"
-        self.订单唯一标识: str = f"{self.网关名称}.{self.订单编号}"
-        self.成交唯一标识: str = f"{self.网关名称}.{self.成交编号}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
+        self.网关_订单编号: str = f"{self.网关名称}.{self.订单编号}"
+        self.网关_成交编号: str = f"{self.网关名称}.{self.成交编号}"
 
 
 @dataclass
@@ -166,8 +164,9 @@ class 类_持仓数据(基础数据):
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.唯一标识: str = f"{self.代码}.{self.交易所.value}"
-        self.持仓唯一标识: str = f"{self.网关名称}.{self.唯一标识}.{self.方向.value}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
+        self.持仓_方向: str = f"{self.网关名称}.{self.代码_交易所}.{self.方向.value}"
+
 
 
 @dataclass
@@ -223,7 +222,7 @@ class 类_合约数据(基础数据):
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.唯一标识: str = f"{self.代码}.{self.交易所.value}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
 
 
 @dataclass
@@ -246,8 +245,8 @@ class 类_报价数据(基础数据):
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.唯一标识: str = f"{self.代码}.{self.交易所.value}"
-        self.报价唯一标识: str = f"{self.网关名称}.{self.报价编号}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
+        self.网关_报价编号: str = f"{self.网关名称}.{self.报价编号}"
 
     def 是否活跃(self) -> bool:
         """检查报价是否处于活跃状态"""
@@ -271,11 +270,11 @@ class 类_订阅请求:
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.唯一标识: str = f"{self.代码}.{self.交易所.value}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
 
 
 @dataclass
-class 类_委托请求:
+class 类_订单请求:
     """新订单请求"""
 
     代码: str
@@ -289,14 +288,14 @@ class 类_委托请求:
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.唯一标识: str = f"{self.代码}.{self.交易所.value}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
 
-    def 生成委托数据(self, 委托编号: str, 网关名称: str) -> 类_委托数据:
+    def 生成订单数据(self, 委托编号: str, 网关名称: str) -> 类_订单数据:
         """创建委托数据对象"""
-        return 类_委托数据(
+        return 类_订单数据(
             代码=self.代码,
             交易所=self.交易所,
-            委托编号=委托编号,
+            订单编号=委托编号,
             类型=self.类型,
             方向=self.方向,
             开平=self.开平,
@@ -317,7 +316,7 @@ class 类_撤单请求:
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.唯一标识: str = f"{self.代码}.{self.交易所.value}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
 
 
 @dataclass
@@ -332,7 +331,7 @@ class 类_历史数据请求:
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.唯一标识: str = f"{self.代码}.{self.交易所.value}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
 
 
 @dataclass
@@ -351,7 +350,7 @@ class 类_报价请求:
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.唯一标识: str = f"{self.代码}.{self.交易所.value}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
 
     def 生成报价数据(self, 报价编号: str, 网关名称: str) -> 类_报价数据:
         """创建报价数据对象"""
@@ -368,3 +367,31 @@ class 类_报价请求:
             参考号=self.参考号,
             网关名称=网关名称,
         )
+
+
+# 新添加
+
+# @dataclass
+# class 类_条件单:
+#     """ 条件单 """
+#     策略名称: str
+#     代码_交易所: str
+#     方向: Direction
+#     开平: Offset
+#     价格: float
+#     数量: float
+#     条件: 类_条件类型
+#     执行价格类型: 类_执行价格类型 = 类_执行价格类型.设定价
+#     分组: str = ""
+#     创建时间: datetime = datetime.now()
+#     触发时间: datetime = None
+#     条件单编号: str = ""  # 条件单编号
+#     状态: 类_条件单状态 = 类_条件单状态.等待中
+#
+#     def __post_init__(self):
+#         """  """
+#         if not self.条件单编号:
+#             self.条件单编号 = datetime.now().strftime("%m%d%H%M%S%f")[:13]
+
+
+

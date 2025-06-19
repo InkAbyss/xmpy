@@ -1,3 +1,5 @@
+import time
+
 import logging
 from logging import Logger
 import smtplib
@@ -27,12 +29,12 @@ from .模块_网关 import 类_基础网关
 from .模块_对象 import (
     类_撤单请求,
     类_日志数据,
-    类_委托请求,
+    类_订单请求,
     类_报价数据,
     类_报价请求,
     类_订阅请求,
     类_历史数据请求,
-    类_委托数据,
+    类_订单数据,
     类_K线数据,
     类_行情数据,
     类_成交数据,
@@ -145,27 +147,27 @@ class 类_主引擎:
         if 网关实例:
             网关实例.订阅行情(请求)
 
-    def 发送委托(self, 请求: 类_委托请求, 网关名称: str) -> str:
+    def 发送委托(self, 请求: 类_订单请求, 网关名称: str) -> str:
         """委托下单"""
         网关实例: 类_基础网关 = self.获取网关(网关名称)
         return 网关实例.发送委托(请求) if 网关实例 else ""
 
-    def 撤消订单(self, 请求: 类_撤单请求, 网关名称: str) -> None:
+    def 撤销订单(self, 请求: 类_撤单请求, 网关名称: str) -> None:
         """撤销订单"""
         网关实例: 类_基础网关 = self.获取网关(网关名称)
         if 网关实例:
-            网关实例.撤消订单(请求)
+            网关实例.撤销订单(请求)
 
     def 发送报价(self, 请求: 类_报价请求, 网关名称: str) -> str:
         """发送报价"""
         网关实例: 类_基础网关 = self.获取网关(网关名称)
         return 网关实例.发送报价(请求) if 网关实例 else ""
 
-    def 撤消报价(self, 请求: 类_撤单请求, 网关名称: str) -> None:
+    def 撤销报价(self, 请求: 类_撤单请求, 网关名称: str) -> None:
         """撤销报价"""
         网关实例: 类_基础网关 = self.获取网关(网关名称)
         if 网关实例:
-            网关实例.撤消报价(请求)
+            网关实例.撤销报价(请求)
 
     def 查询历史(self, 请求: 类_历史数据请求, 网关名称: str) -> Optional[List[类_K线数据]]:
         """查询历史数据"""
@@ -257,14 +259,14 @@ class 订单管理引擎(基础引擎):
         super().__init__(主引擎, 事件引擎, "订单管理")
 
         self.行情字典: Dict[str, 类_行情数据] = {}
-        self.订单字典: Dict[str, 类_委托数据] = {}
+        self.订单字典: Dict[str, 类_订单数据] = {}
         self.成交字典: Dict[str, 类_成交数据] = {}
         self.持仓字典: Dict[str, 类_持仓数据] = {}
         self.账户字典: Dict[str, 类_账户数据] = {}
         self.合约字典: Dict[str, 类_合约数据] = {}
         self.报价字典: Dict[str, 类_报价数据] = {}
 
-        self.活跃订单字典: Dict[str, 类_委托数据] = {}
+        self.活跃订单字典: Dict[str, 类_订单数据] = {}
         self.活跃报价字典: Dict[str, 类_报价数据] = {}
 
         self.仓位转换器字典: Dict[str, 类_持仓转换器] = {}
@@ -307,16 +309,16 @@ class 订单管理引擎(基础引擎):
 
     def 处理行情事件(self, 事件: 类_事件) -> None:
         行情:类_行情数据 = 事件.数据
-        self.行情字典[行情.唯一标识] = 行情
+        self.行情字典[行情.代码_交易所] = 行情
 
     def 处理订单事件(self, 事件: 类_事件) -> None:
         订单 = 事件.数据
-        self.订单字典[订单.订单唯一标识] = 订单
+        self.订单字典[订单.网关_订单编号] = 订单
 
         if 订单.是否活跃():
-            self.活跃订单字典[订单.订单唯一标识] = 订单
-        elif 订单.订单唯一标识 in self.活跃订单字典:
-            self.活跃订单字典.pop(订单.订单唯一标识)
+            self.活跃订单字典[订单.网关_订单编号] = 订单
+        elif 订单.网关_订单编号 in self.活跃订单字典:
+            self.活跃订单字典.pop(订单.网关_订单编号)
 
         转换器 = self.仓位转换器字典.get(订单.网关名称)
         if 转换器:
@@ -324,7 +326,7 @@ class 订单管理引擎(基础引擎):
 
     def 处理成交事件(self, 事件: 类_事件) -> None:
         成交 = 事件.数据
-        self.成交字典[成交.成交唯一标识] = 成交
+        self.成交字典[成交.网关_成交编号] = 成交
 
         转换器 = self.仓位转换器字典.get(成交.网关名称)
         if 转换器:
@@ -332,7 +334,7 @@ class 订单管理引擎(基础引擎):
 
     def 处理持仓事件(self, 事件: 类_事件) -> None:
         持仓 = 事件.数据
-        self.持仓字典[持仓.持仓唯一标识] = 持仓
+        self.持仓字典[持仓.持仓_方向] = 持仓
 
         转换器 = self.仓位转换器字典.get(持仓.网关名称)
         if 转换器:
@@ -344,25 +346,25 @@ class 订单管理引擎(基础引擎):
 
     def 处理合约事件(self, 事件: 类_事件) -> None:
         合约: 类_合约数据 = 事件.数据
-        self.合约字典[合约.唯一标识] = 合约
+        self.合约字典[合约.代码_交易所] = 合约
 
         if 合约.网关名称 not in self.仓位转换器字典:
             self.仓位转换器字典[合约.网关名称] = 类_持仓转换器(self)
 
     def 处理报价事件(self, 事件: 类_事件) -> None:
         报价 = 事件.数据
-        self.报价字典[报价.报价唯一标识] = 报价
+        self.报价字典[报价.网关_报价编号] = 报价
 
         if 报价.是否活跃():
-            self.活跃报价字典[报价.报价唯一标识] = 报价
-        elif 报价.报价唯一标识 in self.活跃报价字典:
-            self.活跃报价字典.pop(报价.报价唯一标识)
+            self.活跃报价字典[报价.网关_报价编号] = 报价
+        elif 报价.网关_报价编号 in self.活跃报价字典:
+            self.活跃报价字典.pop(报价.网关_报价编号)
 
     # 以下为查询方法（保留原有功能，中文方法名）
     def 获取最新行情(self, 合约标识: str) -> Optional[类_行情数据]:
         return self.行情字典.get(合约标识)
 
-    def 获取订单详情(self, 订单标识: str) -> Optional[类_委托数据]:
+    def 获取订单详情(self, 订单标识: str) -> Optional[类_订单数据]:
         return self.订单字典.get(订单标识)
 
     def 获取成交详情(self, 成交标识: str) -> Optional[类_成交数据]:
@@ -383,7 +385,7 @@ class 订单管理引擎(基础引擎):
     def 获取所有行情(self) -> List[类_行情数据]:
         return list(self.行情字典.values())
 
-    def 获取所有订单(self) -> List[类_委托数据]:
+    def 获取所有订单(self) -> List[类_订单数据]:
         return list(self.订单字典.values())
 
     def 获取所有成交(self) -> List[类_成交数据]:
@@ -401,28 +403,28 @@ class 订单管理引擎(基础引擎):
     def 获取所有报价(self) -> List[类_报价数据]:
         return list(self.报价字典.values())
 
-    def 获取活跃订单(self, 合约标识: str = "") -> List[类_委托数据]:
+    def 获取活跃订单(self, 合约标识: str = "") -> List[类_订单数据]:
         if not 合约标识:
             return list(self.活跃订单字典.values())
-        return [订单 for 订单 in self.活跃订单字典.values() if 订单.唯一标识 == 合约标识]
+        return [订单 for 订单 in self.活跃订单字典.values() if 订单.代码_交易所 == 合约标识]
 
     def 获取活跃报价(self, 合约标识: str = "") -> List[类_报价数据]:
         if not 合约标识:
             return list(self.活跃报价字典.values())
-        return [报价 for 报价 in self.活跃报价字典.values() if 报价.唯一标识 == 合约标识]
+        return [报价 for 报价 in self.活跃报价字典.values() if 报价.代码_交易所 == 合约标识]
 
-    def 更新委托请求(self, 请求: 类_委托请求, 订单标识: str, 网关名称: str) -> None:
+    def 更新委托请求(self, 请求: 类_订单请求, 订单标识: str, 网关名称: str) -> None:
         转换器 = self.仓位转换器字典.get(网关名称)
         if 转换器:
             转换器.更新委托请求(请求, 订单标识)
 
     def 转换委托请求(
         self,
-        请求: 类_委托请求,
+        请求: 类_订单请求,
         网关名称: str,
         锁定: bool,
         净额: bool = False
-    ) -> List[类_委托请求]:
+    ) -> List[类_订单请求]:
         转换器 = self.仓位转换器字典.get(网关名称)
         return 转换器.转换委托请求(请求, 锁定, 净额) if 转换器 else [请求]
 
