@@ -35,7 +35,7 @@ dependencies = [
     "numpy >= 2.2.3",
     "ta-lib >= 0.6.0",
     "tzlocal >= 5.3",
-    "bs4 >= 0.02",
+    "bs4 >= 0.0.2",
     "requests >= 2.32.5",
 
     "xmpy_ctp >= 1.0.0",
