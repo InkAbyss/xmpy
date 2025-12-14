@@ -78,6 +78,20 @@ def 保存json文件(文件名称: str, 数据字典: dict) -> None:
             ensure_ascii=False  # 支持非ASCII字符
         )
 
+def 保存文本文件(文件名称: str, 内容) -> None:
+    """将任意内容保存为临时目录中的 .txt 文件"""
+    文件路径: Path = 获取文件路径(文件名称 + ".txt")
+
+    # 将内容转换为字符串
+    if isinstance(内容, (dict, list, tuple)):
+        # 如果是结构化数据，用 JSON 格式美化输出（便于阅读）
+        内容字符串 = json.dumps(内容, indent=4, ensure_ascii=False)
+    else:
+        # 其他类型直接转为字符串
+        内容字符串 = str(内容)
+
+    with open(文件路径, mode="a", encoding="UTF-8") as 文件对象:
+        文件对象.write(内容字符串 + "\n")
 
 def 获取目录路径(目录名称: str) -> Path:
     """获取临时目录下的指定子目录路径"""
@@ -248,156 +262,6 @@ class 类_K线生成器:
             self.窗口回调(self.窗口K线缓存)
             self.窗口K线缓存 = None
 
-    # 日内对齐等交易时长K线，未完成，先注释
-    # def _更新K线数据(self, tick: 类_行情数据, 是否新周期=False) -> None:
-    #     """将tick信息更新进当前K线"""
-    #     if not self.当前K线:
-    #         return
-    #
-    #     if 是否新周期:
-    #         if self.最后Tick缓存:
-    #             成交量变动 = max(tick.成交量 - self.最后Tick缓存.成交量, 0)
-    #             self.当前K线.成交量 += 成交量变动
-    #
-    #             成交额变动 = max(tick.成交额 - self.最后Tick缓存.成交额, 0)
-    #             self.当前K线.成交额 += 成交额变动
-    #
-    #         self.最后Tick缓存 = tick
-    #         return
-    #
-    #         # 更新极值时同时考虑tick的high/low字段
-    #     self.当前K线.最高价 = max(self.当前K线.最高价, tick.最新价)
-    #     if tick.最高价 > self.最后Tick缓存.最高价:
-    #         self.当前K线.最高价 = max(self.当前K线.最高价, tick.最高价)
-    #
-    #     self.当前K线.最低价 = min(self.当前K线.最低价, tick.最新价)
-    #     if tick.最低价 < self.最后Tick缓存.最低价:
-    #         self.当前K线.最低价 = min(self.当前K线.最低价, tick.最低价)
-    #
-    #     self.当前K线.收盘价 = tick.最新价
-    #     self.当前K线.持仓量 = tick.持仓量
-    #     self.当前K线.时间戳 = tick.时间戳
-    #
-    #     # 处理成交量（需考虑tick之间可能的重传情况）
-    #     if self.最后Tick缓存:
-    #         成交量变动 = max(tick.成交量 - self.最后Tick缓存.成交量, 0)
-    #         self.当前K线.成交量 += 成交量变动
-    #
-    #         成交额变动 = max(tick.成交额 - self.最后Tick缓存.成交额, 0)
-    #         self.当前K线.成交额 += 成交额变动
-    #
-    #     self.最后Tick缓存 = tick
-    #
-    # def 更新Tick(self, tick: 类_行情数据) -> None:
-    #     """处理Tick更新"""
-    #     新周期标志 = False
-    #     if not tick.最新价:
-    #         return
-    #
-    #     # 生成基准时间戳（自然分钟结束点）
-    #     基准时间 = tick.时间戳.replace(second=0, microsecond=0) + timedelta(minutes=1)
-    #
-    #     # 新周期判断条件
-    #     if not self.当前K线:  # 初始化
-    #         新周期标志 = True
-    #     else:
-    #         if (self.当前K线.时间戳.minute != tick.时间戳.minute) or (self.当前K线.时间戳.hour != tick.时间戳.hour):
-    #             新周期标志 = True
-    #
-    #     收盘时间集 = {(10, 15), (11, 30), (15, 0), (2, 30)}
-    #
-    #     # 收盘tick应直接更新K线并推送
-    #     if self.当前K线 and (tick.时间戳.hour, tick.时间戳.minute) in 收盘时间集:
-    #         self._更新K线数据(tick)
-    #         self.当前K线.时间戳 = 基准时间 - timedelta(minutes=1)
-    #
-    #         # # 大商所15点收盘后，过3-4分钟还会推送一条tick数据，将它归类到15点这根K线
-    #         # if self.当前K线.交易所.value == 'DCE' and (tick.时间戳.hour, tick.时间戳.minute) in (15, 0):
-    #         #     self.大商所收盘计数 += 1
-    #         #     if self.大商所收盘计数 == 2:
-    #         #         print('=== 推送大商所收盘时间集')
-    #         #         self.K线回调(self.当前K线)
-    #         #         self.当前K线 = None
-    #         #         self.大商所收盘计数 = 0
-    #         #         return
-    #         #     else:
-    #         #         return
-    #
-    #         self.K线回调(self.当前K线)
-    #         self.当前K线 = None
-    #         return
-    #
-    #     特殊收盘时间集 = {(23, 0)}
-    #     if self.当前K线 and self.当前K线.交易所.value != 'SHFE' and (
-    #     tick.时间戳.hour, tick.时间戳.minute) in 特殊收盘时间集:
-    #         self._更新K线数据(tick)
-    #         self.当前K线.时间戳 = 基准时间 - timedelta(minutes=1)
-    #
-    #         print('=== 推送特殊收盘时间集')
-    #         self.K线回调(self.当前K线)
-    #         self.当前K线 = None
-    #         return
-    #
-    #     if 新周期标志:
-    #         # 先保存旧K线（如果有）
-    #         if self.当前K线:
-    #             self.当前K线.时间戳 = 基准时间 - timedelta(minutes=1)  # 显示为周期起始时间
-    #             self.K线回调(self.当前K线)
-    #
-    #         # 创建新K线（开盘价用第一个有效tick的最新价）
-    #         self.当前K线 = 类_K线数据(
-    #             代码=tick.代码,
-    #             交易所=tick.交易所,
-    #             周期=类_周期.一分钟,
-    #             时间戳=基准时间 - timedelta(minutes=1),  # K线起始时间
-    #             网关名称=tick.网关名称,
-    #             开盘价=tick.最新价,
-    #             最高价=tick.最新价,  # 初始化用tick的最高价
-    #             最低价=tick.最新价,  # 初始化用tick的最低价
-    #             收盘价=tick.最新价,
-    #             持仓量=tick.持仓量,
-    #             成交量=0,
-    #             成交额=0
-    #         )
-    #         self._更新K线数据(tick, 是否新周期=True)
-    #     else:
-    #         self._更新K线数据(tick)
-    #
-    # def 更新K线(self, bar: 类_K线数据) -> None:
-    #     """处理K线更新"""
-    #     if self.周期类型 == 类_周期.一分钟:
-    #         self._处理分钟窗口(bar)
-    #     elif self.周期类型 == 类_周期.一小时:
-    #         self._处理小时窗口(bar)
-    #     else:
-    #         self._处理日线窗口(bar)
-    #
-    # def _处理分钟窗口(self, bar: 类_K线数据) -> None:
-    #     """分钟级窗口处理"""
-    #     if not self.窗口K线缓存:
-    #         基准时间: datetime = bar.时间戳.replace(second=0, microsecond=0) + timedelta(minutes=1)
-    #         self.窗口K线缓存 = 类_K线数据(
-    #             代码=bar.代码,
-    #             交易所=bar.交易所,
-    #             时间戳=基准时间,
-    #             网关名称=bar.网关名称,
-    #             开盘价=bar.开盘价,
-    #             最高价=bar.最高价,
-    #             最低价=bar.最低价
-    #         )
-    #     else:
-    #         self.窗口K线缓存.最高价 = max(self.窗口K线缓存.最高价, bar.最高价)
-    #         self.窗口K线缓存.最低价 = min(self.窗口K线缓存.最低价, bar.最低价)
-    #
-    #     self.窗口K线缓存.收盘价 = bar.收盘价
-    #     self.窗口K线缓存.成交量 += bar.成交量
-    #     self.窗口K线缓存.成交额 += bar.成交额
-    #     self.窗口K线缓存.持仓量 = bar.持仓量
-    #
-    #     if not (bar.时间戳.minute) % self.窗口大小:
-    #         self.窗口回调(self.窗口K线缓存)
-    #         self.窗口K线缓存 = None
-
     def _处理小时窗口(self, bar: 类_K线数据) -> None:
         """小时级窗口处理"""
         if not self.小时K线缓存:
@@ -522,308 +386,122 @@ class 类_K线生成器:
             return result
         return None
 
-class 类_数组管理器:
+def 爬取主力合约表格():
+    # 固定文件名
+    文件名称 = "主力合约记录.json"
+
+    # 获取当天日期
+    今天日期 = datetime.now().strftime("%Y-%m-%d")
+
+    try:
+        # 尝试加载现有JSON文件
+        现有数据 = 加载json文件(文件名称)
+
+        # 检查日期是否为今天
+        if 现有数据 and 现有数据.get("日期") == 今天日期:
+            print(f"今天({今天日期})的数据已存在，跳过爬取")
+            return
+    except Exception as e:
+        # 文件不存在或其他错误，继续执行爬取
+        print(f"加载现有文件失败: {e}，开始爬取新数据")
+
+    # 执行爬取
+    网址 = "http://openctp.cn/fees.html"
+
+    try:
+        # 发送请求获取网页内容
+        响应 = requests.get(网址)
+        响应.encoding = 'utf-8'  # 设置编码
+
+        if 响应.status_code == 200:
+            解析器 = BeautifulSoup(响应.text, 'html.parser')
+
+            # 找到表格
+            表格 = 解析器.find('table', {'id': 'fees_table'})
+
+            if 表格:
+                # 获取黄色背景的行数据
+                合约代码列表 = []
+                表格主体 = 表格.find('tbody')
+
+                for 行 in 表格主体.find_all('tr'):
+                    单元格列表 = 行.find_all('td')
+
+                    # 确保有足够的列
+                    if len(单元格列表) > 1:
+                        交易所 = 单元格列表[0].text.strip()  # 第一列是交易所
+                        合约代码单元格 = 单元格列表[1]  # 第二列是合约代码
+
+                        # 只检查合约代码单元格是否有黄色背景
+                        单元格样式 = 合约代码单元格.get('style')
+                        if 单元格样式 and 'background-color:yellow' in 单元格样式:
+                            合约代码 = 合约代码单元格.text.strip()
+                            拼接结果 = f"{合约代码}.{交易所}"
+                            合约代码列表.append({
+                                "合约代码": 合约代码,
+                                "交易所": 交易所,
+                                "完整代码": 拼接结果
+                            })
+
+                # 按交易所分组
+                分组数据 = {}
+                for 合约 in 合约代码列表:
+                    交易所 = 合约["交易所"]
+                    if 交易所 not in 分组数据:
+                        分组数据[交易所] = []
+                    分组数据[交易所].append(合约["完整代码"])
+
+                # 构建输出数据
+                输出数据 = {
+                    "日期": 今天日期,
+                    "数据": 分组数据
+                }
+
+                # 打印结果
+                if 合约代码列表:
+                    # 调用外部保存函数
+                    保存json文件(文件名称, 输出数据)
+                    print(f"\n今日主力合约数据已保存到: {文件名称}")
+                else:
+                    print("未找到符合条件的合约数据")
+
+            else:
+                print("未找到表格")
+        else:
+            print(f"请求失败，状态码: {响应.status_code}")
+
+    except Exception as 异常:
+        print(f"发生错误: {异常}")
+
+def 处理合约信息(交易所名称: str = "全部") -> None:
     """
-    时间序列管理与技术指标计算
-    功能：
-    1. 维护K线时间序列
-    2. 计算各类技术指标
+    处理合约数据
+
+    参数:
+        交易所名称: 交易所名称，默认为"全部"，可选CZCE、GFEX、CFFEX、DCE、SHFE、INE
+
+    返回:
+        主力合约列表
     """
+    # 加载JSON文件
+    文件名称 = "主力合约记录.json"
+    现有数据 = 加载json文件(文件名称)
+    数据字典 = 现有数据['数据']
 
-    def __init__(self, 容量: int = 100) -> None:
-        self.数据计数: int = 0
-        self.最大容量 = 容量
-        self.就绪标志: bool = False
+    # 验证交易所名称
+    if 交易所名称 != "全部" and 交易所名称 not in 数据字典:
+        raise ValueError(f"错误: 未找到交易所 {交易所名称}。可选的交易所有: {', '.join(数据字典.keys())}")
 
-        # 初始化存储数组
-        self.开盘序列 = np.zeros(容量)
-        self.最高序列 = np.zeros(容量)
-        self.最低序列 = np.zeros(容量)
-        self.收盘序列 = np.zeros(容量)
-        self.成交量序列 = np.zeros(容量)
-        self.成交额序列 = np.zeros(容量)
-        self.持仓量序列 = np.zeros(容量)
+    # 选择要处理的交易所
+    目标交易所列表 = [交易所名称] if 交易所名称 != "全部" else 数据字典.keys()
 
-    def 更新K线(self, bar: 类_K线数据) -> None:
-        """更新新K线数据"""
-        self.数据计数 += 1
-        if not self.就绪标志 and self.数据计数 >= self.最大容量:
-            self.就绪标志 = True
+    # 收集合约代码
+    主力合约列表 = []
+    for 交易所 in 目标交易所列表:
+        合约列表 = 数据字典[交易所]
+        主力合约列表.extend(合约列表)
 
-        # 滚动更新数组
-        self.开盘序列[:-1] = self.开盘序列[1:]
-        self.最高序列[:-1] = self.最高序列[1:]
-        self.最低序列[:-1] = self.最低序列[1:]
-        self.收盘序列[:-1] = self.收盘序列[1:]
-        self.成交量序列[:-1] = self.成交量序列[1:]
-        self.成交额序列[:-1] = self.成交额序列[1:]
-        self.持仓量序列[:-1] = self.持仓量序列[1:]
-
-        # 填充最新数据
-        self.开盘序列[-1] = bar.开盘价
-        self.最高序列[-1] = bar.最高价
-        self.最低序列[-1] = bar.最低价
-        self.收盘序列[-1] = bar.收盘价
-        self.成交量序列[-1] = bar.成交量
-        self.成交额序列[-1] = bar.成交额
-        self.持仓量序列[-1] = bar.持仓量
-
-    @property
-    def 开盘价(self) -> np.ndarray:
-        return self.开盘序列
-
-    @property
-    def 最高价(self) -> np.ndarray:
-        return self.最高序列
-
-    @property
-    def 最低价(self) -> np.ndarray:
-        return self.最低序列
-
-    @property
-    def 收盘价(self) -> np.ndarray:
-        return self.收盘序列
-
-    @property
-    def 成交量(self) -> np.ndarray:
-        return self.成交量序列
-
-    @property
-    def 成交额(self) -> np.ndarray:
-        return self.成交额序列
-
-    @property
-    def 持仓量(self) -> np.ndarray:
-        return self.持仓量序列
-
-    def 简单移动平均(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.SMA(self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 指数移动平均(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.EMA(self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 自适应均线(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.KAMA(self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 加权移动平均(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.WMA(self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 绝对价格振荡(self, 快周期: int, 慢周期: int, 移动平均类型: int = 0, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.APO(self.收盘价, 快周期, 慢周期, 移动平均类型)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 钱德动量摆动(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.CMO(self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 动量指标(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.MOM(self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 价格振荡百分比(self, 快周期: int, 慢周期: int, 移动平均类型: int = 0, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.PPO(self.收盘价, 快周期, 慢周期, 移动平均类型)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 变动率(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.ROC(self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 变动率比(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.ROCR(self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 变动率百分比(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.ROCP(self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 变动率比100(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.ROCR100(self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 三重指数均线(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.TRIX(self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 标准差(self, 周期: int, 偏差: int = 1, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.STDDEV(self.收盘价, 周期, 偏差)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 能量潮指标(self, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.OBV(self.收盘价, self.成交量)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 商品通道指数(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.CCI(self.最高价, self.最低价, self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 平均真实波幅(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.ATR(self.最高价, self.最低价, self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 归一化波幅(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.NATR(self.最高价, self.最低价, self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 相对强弱指数(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.RSI(self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def MACD指标(
-        self,
-        快周期: int,
-        慢周期: int,
-        信号周期: int,
-        数组模式: bool = False
-    ) -> Union[Tuple[float, float, float], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
-        macd, 信号线, 柱状图 = talib.MACD(self.收盘价, 快周期, 慢周期, 信号周期)
-        return (macd, 信号线, 柱状图) if 数组模式 else (macd[-1], 信号线[-1], 柱状图[-1])
-
-    def 平均趋向指数(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.ADX(self.最高价, self.最低价, self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 平均趋向指数评级(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.ADXR(self.最高价, self.最低价, self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 趋向指数(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.DX(self.最高价, self.最低价, self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 负向指标(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.MINUS_DI(self.最高价, self.最低价, self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 正向指标(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.PLUS_DI(self.最高价, self.最低价, self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 威廉指标(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.WILLR(self.最高价, self.最低价, self.收盘价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 终极振荡器(
-        self,
-        周期1: int = 7,
-        周期2: int = 14,
-        周期3: int = 28,
-        数组模式: bool = False
-    ) -> Union[float, np.ndarray]:
-        结果 = talib.ULTOSC(self.最高价, self.最低价, self.收盘价, 周期1, 周期2, 周期3)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 真实波动幅度(self, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.TRANGE(self.最高价, self.最低价, self.收盘价)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 布林通道(
-        self,
-        周期: int,
-        标准差倍数: float,
-        数组模式: bool = False
-    ) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
-        中轨 = self.简单移动平均(周期, 数组模式)
-        标准差 = self.标准差(周期, 1, 数组模式)
-        上轨 = 中轨 + 标准差 * 标准差倍数
-        下轨 = 中轨 - 标准差 * 标准差倍数
-        return (上轨, 下轨)
-
-    def 肯特纳通道(
-        self,
-        周期: int,
-        波幅倍数: float,
-        数组模式: bool = False
-    ) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
-        中轨 = self.简单移动平均(周期, 数组模式)
-        波幅 = self.平均真实波幅(周期, 数组模式)
-        上轨 = 中轨 + 波幅 * 波幅倍数
-        下轨 = 中轨 - 波幅 * 波幅倍数
-        return (上轨, 下轨)
-
-    def 唐奇安通道(
-        self,
-        周期: int,
-        数组模式: bool = False
-    ) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
-        上轨 = talib.MAX(self.最高价, 周期)
-        下轨 = talib.MIN(self.最低价, 周期)
-        return (上轨, 下轨) if 数组模式 else (上轨[-1], 下轨[-1])
-
-    def 阿隆指标(
-        self,
-        周期: int,
-        数组模式: bool = False
-    ) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
-        阿隆上, 阿隆下 = talib.AROON(self.最高价, self.最低价, 周期)
-        return (阿隆上, 阿隆下) if 数组模式 else (阿隆上[-1], 阿隆下[-1])
-
-    def 阿隆振荡器(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.AROONOSC(self.最高价, self.最低价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 负向动向指标(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.MINUS_DM(self.最高价, self.最低价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 正向动向指标(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.PLUS_DM(self.最高价, self.最低价, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 资金流量指数(self, 周期: int, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.MFI(self.最高价, self.最低价, self.收盘价, self.成交量, 周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 累积分布指标(self, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.AD(self.最高价, self.最低价, self.收盘价, self.成交量)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 累积振荡指标(
-        self,
-        快周期: int,
-        慢周期: int,
-        数组模式: bool = False
-    ) -> Union[float, np.ndarray]:
-        结果 = talib.ADOSC(self.最高价, self.最低价, self.收盘价, self.成交量, 快周期, 慢周期)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 均势指标(self, 数组模式: bool = False) -> Union[float, np.ndarray]:
-        结果 = talib.BOP(self.开盘价, self.最高价, self.最低价, self.收盘价)
-        return 结果 if 数组模式 else 结果[-1]
-
-    def 随机指标(
-        self,
-        快K周期: int,
-        慢K周期: int,
-        慢K类型: int,
-        慢D周期: int,
-        慢D类型: int,
-        数组模式: bool = False
-    ) -> Union[Tuple[float, float], Tuple[np.ndarray, np.ndarray]]:
-        K值, D值 = talib.STOCH(
-            self.最高价,
-            self.最低价,
-            self.收盘价,
-            快K周期,
-            慢K周期,
-            慢K类型,
-            慢D周期,
-            慢D类型
-        )
-        return (K值, D值) if 数组模式 else (K值[-1], D值[-1])
-
-    def 抛物线指标(
-        self,
-        加速因子: float,
-        极限值: float,
-        数组模式: bool = False
-    ) -> Union[float, np.ndarray]:
-        结果 = talib.SAR(self.最高价, self.最低价, 加速因子, 极限值)
-        return 结果 if 数组模式 else 结果[-1]
-
+    return 主力合约列表
 
 
 if __name__ == "__main__":

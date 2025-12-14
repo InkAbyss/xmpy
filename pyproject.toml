@@ -1,33 +1,114 @@
 [project]
-name = "xmpy"     # 包名
-version = "1.0.2"       # 版本
-authors = [
-  { name="bhzy", email="2024305928@qq.com" },        # 用户名和邮箱
-]
-description = "专为中文母语开发者打造的量化交易研发框架。"     # 搜索结果页显示的单行内容   包的简述
+# name: 包的发布名称，将在PyPI上显示，必须唯一且只包含ASCII字母、数字、连字符和下划线
+name = "xmpy"
+# dynamic: 指定动态从其他来源获取的字段，这里version将从__init__.py文件中提取
+dynamic = ["version"]
+# description: 包的简短描述，用于PyPI等平台展示
+description = "专为中文母语开发者打造的量化交易研发框架。"
+# readme: 项目README文件的路径，包含详细文档和用法说明
 readme = "README.md"
-requires-python = ">=3.8"
+# license: 包的开源许可证信息，这里使用MIT许可证
+license = {text = "MIT"}
+# authors: 包的作者信息列表，包含姓名和联系方式
+authors = [{name = "bhzy", email = "2024305928@qq.com"}]
+# classifiers: PyPI分类器列表，帮助用户搜索和筛选包
 classifiers = [
-    "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
+    "Development Status :: 5 - Production/Stable",      # 开发状态：稳定版
+    "License :: OSI Approved :: MIT License",           # MIT许可证认证
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",              # 支持Python3
+    "Programming Language :: Python :: 3.10",           # 支持Python 3.10
+    "Programming Language :: Python :: 3.11",           # 支持Python 3.11
+    "Programming Language :: Python :: 3.12",           # 支持Python 3.12
+    "Programming Language :: Python :: 3.13",           # 支持Python 3.13
+    "Programming Language :: Python :: Implementation :: CPython",  # CPython实现
+    "Topic :: Office/Business :: Financial :: Investment",  # 主题：金融投资
+    "Natural Language :: Chinese (Simplified)",         # 支持简体中文
+    "Typing :: Typed",                                  # 使用类型注解
 ]
-license = "MIT"
-license-files = ["LICEN[CS]E*"]
-
-# 添加第三方依赖包
+# requires-python: 支持的Python版本范围
+requires-python = ">=3.10"
+# dependencies: 项目运行时依赖的第三方包列表
 dependencies = [
-  "numpy >= 2.2.3",
-  "ta-lib >= 0.6.0",
-  "tzlocal >= 5.3",
+    "numpy >= 2.2.3",
+    "ta-lib >= 0.6.0",
+    "tzlocal >= 5.3",
+    "bs4 >= 0.02",
+    "requests >= 2.32.5",
 
-  "xmpy_ctp >= 1.0.0",
-  "xmpy_sqlite >= 1.0.0",
-  "xmpy_ctastrategy >= 1.0.0",
+    "xmpy_ctp >= 1.0.0",
+    "xmpy_sqlite >= 1.0.0",
+    "xmpy_ctastrategy >= 1.0.0",
+    "xmpy_datarecorder >= 1.0.0",
 ]
+# keywords: 关键词列表，用于在PyPI上搜索和分类
+keywords = ["quant", "quantitative", "investment", "trading", "algotrading"]
 
+# [project.urls] 节定义项目的相关URL链接
 [project.urls]
 Homepage = "https://github.com/InkAbyss/xmpy"      # 项目地址
 Issues = "https://github.com/InkAbyss/xmpy/issues"
 
-[tool.setuptools.packages.find]
+# [build-system] 节指定构建系统配置
+[build-system]
+# requires: 构建系统需要的依赖包
+requires = ["hatchling>=1.27.0"]
+# build-backend: 构建后端工具
+build-backend = "hatchling.build"
+
+# [tool.hatch.version] 节配置Hatch版本管理
+[tool.hatch.version]
+# path: 版本信息所在的文件路径
+path = "xmpy/__init__.py"
+# pattern: 从文件中提取版本号的正则表达式模式
+pattern = "__version__ = ['\"](?P<version>[^'\"]+)['\"]"
+
+# [tool.hatch.build.targets.wheel] 节配置Wheel包构建
+[tool.hatch.build.targets.wheel]
+# packages: 包含在分发中的包列表
+packages = ["xmpy"]
+# include-package-data: 是否包含包数据文件
+include-package-data = true
+
+# [tool.hatch.build.targets.sdist] 节配置源码分发
+[tool.hatch.build.targets.sdist]
+# include: 包含在源码分发中的文件模式
 include = ["xmpy*"]
+
+# [tool.ruff] 节配置Ruff代码检查工具
+[tool.ruff]
+# target-version: 目标Python版本
+target-version = "py310"
+# output-format: 输出格式
+output-format = "full"
+
+# [tool.ruff.lint] 节配置Ruff的lint规则
+[tool.ruff.lint]
+# select: 启用的检查规则集合
+select = [
+    "B",  # flake8-bugbear - 发现可能的bug和设计问题
+    "E",  # pycodestyle error - 代码格式错误
+    "F",  # pyflakes - 发现Python代码中的错误
+    "UP",  # pyupgrade - 升级Python语法到最新版本
+    "W",  # pycodestyle warning - 代码格式警告
+]
+# ignore: 忽略的规则
+ignore = ["E501"]     # E501: 忽略行长度限制
+
+# [tool.mypy] 节配置Mypy静态类型检查工具
+[tool.mypy]
+python_version = "3.10"             # python_version: 目标Python版本
+warn_return_any = true              # warn_return_any: 当函数返回Any类型时警告
+warn_unused_configs = true          # warn_unused_configs: 当有未使用的配置时警告
+disallow_untyped_defs = true        # disallow_untyped_defs: 不允许未类型注解的函数定义
+disallow_incomplete_defs = true     # disallow_incomplete_defs: 不允许不完整的函数定义
+check_untyped_defs = true           # check_untyped_defs: 检查未类型注解的函数定义
+disallow_untyped_decorators = true  # disallow_untyped_decorators: 不允许未类型注解的装饰器
+no_implicit_optional = true         # no_implicit_optional: 不允许隐式的Optional类型
+strict_optional = true              # strict_optional: 严格检查Optional类型
+warn_redundant_casts = true         # warn_redundant_casts: 当有冗余的类型转换时警告
+warn_unused_ignores = true          # warn_unused_ignores: 当有未使用的类型忽略注释时警告
+warn_no_return = true               # warn_no_return: 当函数可能没有返回值时警告
+ignore_missing_imports = true       # ignore_missing_imports: 忽略缺失导入的错误

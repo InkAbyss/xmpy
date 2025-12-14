@@ -67,7 +67,7 @@ class 类_行情数据(基础数据):
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.代码_交易所: str = f"{self.代码}.{self.交易所.name}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
 
 @dataclass
 class 类_K线数据(基础数据):
@@ -370,6 +370,18 @@ class 类_报价请求:
 
 
 # 新添加
+@dataclass
+class 类_价差项:
+    """价差数据容器"""
+    名称: str
+    买价: float
+    卖价: float
+    买量: int
+    卖量: int
+    净头寸: int
+    时间: datetime
+    价格公式: str
+    交易公式: str
 
 # @dataclass
 # class 类_条件单:
