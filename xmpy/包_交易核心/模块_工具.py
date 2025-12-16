@@ -3,12 +3,11 @@ import sys
 from pathlib import Path
 from typing import Callable, Optional, Union, Tuple
 from decimal import Decimal
-
-
+import requests
+from bs4 import BeautifulSoup
 import numpy as np
-
-import talib
 from datetime import datetime, time, timedelta
+
 from .模块_常数 import 类_周期
 from .模块_对象 import 类_K线数据,类_行情数据
 
