@@ -37,6 +37,10 @@ dependencies = [
     "tzlocal >= 5.3",
     "bs4 >= 0.0.2",
     "requests >= 2.32.5",
+    "deap >= 1.4.3",
+    "tqdm >= 4.67.1",
+    "pandas >= 2.2.2",
+    "plotly >= 6.2.0",
 
     "xmpy_ctp >= 1.0.0",
     "xmpy_sqlite >= 1.0.0",
