@@ -67,7 +67,8 @@ class 类_行情数据(基础数据):
 
     def __post_init__(self) -> None:
         """生成唯一标识"""
-        self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
+        # self.代码_交易所: str = f"{self.代码}.{self.交易所.value}"
+        self.代码_交易所: str = f"{self.代码}.{self.交易所.name}"
 
 @dataclass
 class 类_K线数据(基础数据):
