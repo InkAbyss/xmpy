@@ -1,7 +1,5 @@
 import time
 
-import logging
-from logging import Logger
 import smtplib
 import os
 import traceback
@@ -47,6 +45,8 @@ from .模块_设置 import 全局设置
 from .模块_工具 import 获取目录路径,交易目录
 from .模块_转换器 import 类_持仓转换器
 from xmpy.包_交易核心.包_国际化 import _
+
+from xmpy.包_交易核心.模块_日志 import logger, DEBUG, INFO, WARNING, ERROR, CRITICAL
 
 
 class 类_主引擎:
@@ -98,9 +98,9 @@ class 类_主引擎:
         self.添加引擎(订单管理引擎)
         self.添加引擎(邮件引擎)
 
-    def 记录日志(self, 消息: str, 来源: str = "") -> None:
+    def 记录日志(self, 消息: str, 来源: str = "", 日志级别: int = 20) -> None:
         """记录日志事件"""
-        日志记录: 类_日志数据 = 类_日志数据(消息内容=消息, 网关名称=来源)
+        日志记录: 类_日志数据 = 类_日志数据(消息内容=消息, 网关名称=来源, 日志级别 = 日志级别)
         事件实例: 类_事件 = 类_事件(事件类型_日志, 日志记录)
         self.事件引擎.放入事件(事件实例)
 
@@ -201,56 +201,84 @@ class 基础引擎(ABC):
 class 日志引擎(基础引擎):
     """处理日志事件"""
 
+    级别映射: dict[int, str] = {
+        DEBUG: "DEBUG",
+        INFO: "INFO",
+        WARNING: "WARNING",
+        ERROR: "ERROR",
+        CRITICAL: "CRITICAL",
+    }
+
     def __init__(self, 主引擎: 类_主引擎, 事件引擎: 类_事件引擎) -> None:
         super().__init__(主引擎, 事件引擎, "日志")
 
-        if not 全局设置["日志.启用"]:
-            return
-
-        self.日志级别: int = 全局设置["日志.级别"]
-        self.日志记录器: Logger = logging.getLogger("veighna")
-        self.日志记录器.setLevel(self.日志级别)
-
-        self.格式器: logging.Formatter = logging.Formatter(
-            "%(asctime)s  %(levelname)s: %(message)s"
-        )
-
-        self.添加空处理器()
-        if 全局设置["日志.控制台"]:
-            self.添加控制台处理器()
-        if 全局设置["日志.文件"]:
-            self.添加文件处理器()
-
-        self.注册事件()
-
-    def 添加空处理器(self) -> None:
-        """防止无处理器错误"""
-        self.日志记录器.addHandler(logging.NullHandler())
-
-    def 添加控制台处理器(self) -> None:
-        """控制台日志输出"""
-        控制台处理器 = logging.StreamHandler()
-        控制台处理器.setLevel(self.日志级别)
-        控制台处理器.setFormatter(self.格式器)
-        self.日志记录器.addHandler(控制台处理器)
-
-    def 添加文件处理器(self) -> None:
-        """文件日志输出"""
-        当天日期 = datetime.now().strftime("%Y%m%d")
-        日志目录:Path = 获取目录路径("log")
-        文件路径:Path = 日志目录 / f"vt_{当天日期}.log"
-
-        文件处理器 = logging.FileHandler(文件路径, mode="a", encoding="utf8")
-        文件处理器.setLevel(self.日志级别)
-        文件处理器.setFormatter(self.格式器)
-        self.日志记录器.addHandler(文件处理器)
-
-    def 注册事件(self) -> None:
-        self.事件引擎.注册类型处理器(事件类型_日志, self.处理日志事件)
+        self.日志启用 = 全局设置["日志.启用"]
+        self.注册事件(事件类型_日志)
 
     def 处理日志事件(self, 事件: 类_事件) -> None:
+        if not self.日志启用:
+            return
+
         日志记录: 类_日志数据 = 事件.数据
-        self.日志记录器.log(日志记录.日志级别, 日志记录.消息内容)
+        级别: str | int = self.级别映射.get(日志记录.日志级别, 日志记录.日志级别)
+        logger.bind(网关名称=日志记录.网关名称).log(级别, 日志记录.消息内容)
+
+    def 注册事件(self,事件类型) -> None:
+        self.事件引擎.注册类型处理器(事件类型, self.处理日志事件)
+
+# class 日志引擎(基础引擎):
+#     """处理日志事件"""
+#
+#     def __init__(self, 主引擎: 类_主引擎, 事件引擎: 类_事件引擎) -> None:
+#         super().__init__(主引擎, 事件引擎, "日志")
+#
+#         if not 全局设置["日志.启用"]:
+#             return
+#
+#         self.日志级别: int = 全局设置["日志.级别"]
+#         self.日志记录器: Logger = logging.getLogger("veighna")
+#         self.日志记录器.setLevel(self.日志级别)
+#
+#         self.格式器: logging.Formatter = logging.Formatter(
+#             "%(asctime)s  %(levelname)s: %(message)s"
+#         )
+#
+#         self.添加空处理器()
+#         if 全局设置["日志.控制台"]:
+#             self.添加控制台处理器()
+#         if 全局设置["日志.文件"]:
+#             self.添加文件处理器()
+#
+#         self.注册事件()
+#
+#     def 添加空处理器(self) -> None:
+#         """防止无处理器错误"""
+#         self.日志记录器.addHandler(logging.NullHandler())
+#
+#     def 添加控制台处理器(self) -> None:
+#         """控制台日志输出"""
+#         控制台处理器 = logging.StreamHandler()
+#         控制台处理器.setLevel(self.日志级别)
+#         控制台处理器.setFormatter(self.格式器)
+#         self.日志记录器.addHandler(控制台处理器)
+#
+#     def 添加文件处理器(self) -> None:
+#         """文件日志输出"""
+#         当天日期 = datetime.now().strftime("%Y%m%d")
+#         日志目录:Path = 获取目录路径("log")
+#         文件路径:Path = 日志目录 / f"vt_{当天日期}.log"
+#
+#         文件处理器 = logging.FileHandler(文件路径, mode="a", encoding="utf8")
+#         文件处理器.setLevel(self.日志级别)
+#         文件处理器.setFormatter(self.格式器)
+#         self.日志记录器.addHandler(文件处理器)
+#
+#     def 注册事件(self) -> None:
+#         self.事件引擎.注册类型处理器(事件类型_日志, self.处理日志事件)
+#
+#     def 处理日志事件(self, 事件: 类_事件) -> None:
+#         日志记录: 类_日志数据 = 事件.数据
+#         self.日志记录器.log(日志记录.日志级别, 日志记录.消息内容)
 
 class 订单管理引擎(基础引擎):
     """订单管理系统"""
@@ -309,7 +337,7 @@ class 订单管理引擎(基础引擎):
 
     def 处理行情事件(self, 事件: 类_事件) -> None:
         行情:类_行情数据 = 事件.数据
-        self.行情字典[行情.代码_交易所] = 行情
+        self.行情字典[行情.合约_交易所] = 行情
 
     def 处理订单事件(self, 事件: 类_事件) -> None:
         订单 = 事件.数据
@@ -346,7 +374,7 @@ class 订单管理引擎(基础引擎):
 
     def 处理合约事件(self, 事件: 类_事件) -> None:
         合约: 类_合约数据 = 事件.数据
-        self.合约字典[合约.代码_交易所] = 合约
+        self.合约字典[合约.合约_交易所] = 合约
 
         if 合约.网关名称 not in self.仓位转换器字典:
             self.仓位转换器字典[合约.网关名称] = 类_持仓转换器(self)
@@ -360,9 +388,8 @@ class 订单管理引擎(基础引擎):
         elif 报价.网关_报价编号 in self.活跃报价字典:
             self.活跃报价字典.pop(报价.网关_报价编号)
 
-    # 以下为查询方法（保留原有功能，中文方法名）
-    def 获取最新行情(self, 合约标识: str) -> Optional[类_行情数据]:
-        return self.行情字典.get(合约标识)
+    def 获取最新行情(self, 合约_交易所: str) -> Optional[类_行情数据]:
+        return self.行情字典.get(合约_交易所)
 
     def 获取订单详情(self, 订单标识: str) -> Optional[类_订单数据]:
         return self.订单字典.get(订单标识)
@@ -376,8 +403,8 @@ class 订单管理引擎(基础引擎):
     def 获取账户详情(self, 账户标识: str) -> Optional[类_账户数据]:
         return self.账户字典.get(账户标识)
 
-    def 获取合约详情(self, 合约标识: str) -> Optional[类_合约数据]:
-        return self.合约字典.get(合约标识, None)
+    def 获取合约详情(self, 合约_交易所: str) -> Optional[类_合约数据]:
+        return self.合约字典.get(合约_交易所, None)
 
     def 获取报价详情(self, 报价标识: str) -> Optional[类_报价数据]:
         return self.报价字典.get(报价标识)
@@ -403,15 +430,15 @@ class 订单管理引擎(基础引擎):
     def 获取所有报价(self) -> List[类_报价数据]:
         return list(self.报价字典.values())
 
-    def 获取活跃订单(self, 合约标识: str = "") -> List[类_订单数据]:
-        if not 合约标识:
+    def 获取活跃订单(self, 合约_交易所: str = "") -> List[类_订单数据]:
+        if not 合约_交易所:
             return list(self.活跃订单字典.values())
-        return [订单 for 订单 in self.活跃订单字典.values() if 订单.代码_交易所 == 合约标识]
+        return [订单 for 订单 in self.活跃订单字典.values() if 订单.合约_交易所 == 合约_交易所]
 
-    def 获取活跃报价(self, 合约标识: str = "") -> List[类_报价数据]:
-        if not 合约标识:
+    def 获取活跃报价(self, 合约_交易所: str = "") -> List[类_报价数据]:
+        if not 合约_交易所:
             return list(self.活跃报价字典.values())
-        return [报价 for 报价 in self.活跃报价字典.values() if 报价.代码_交易所 == 合约标识]
+        return [报价 for 报价 in self.活跃报价字典.values() if 报价.合约_交易所 == 合约_交易所]
 
     def 更新委托请求(self, 请求: 类_订单请求, 订单标识: str, 网关名称: str) -> None:
         转换器 = self.仓位转换器字典.get(网关名称)
@@ -482,6 +509,7 @@ class 邮件引擎(基础引擎):
                     with smtplib.SMTP_SSL(服务器地址, 端口号) as 邮件连接:
                         邮件连接.login(用户名, 密码)
                         邮件连接.send_message(待发邮件)
+                        邮件连接.close()
                 except Exception as 异常:
                     # 记录发送失败日志
                     错误信息 = traceback.format_exc()

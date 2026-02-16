@@ -1,6 +1,6 @@
 """交易平台全局配置"""
 
-from logging import CRITICAL
+from logging import CRITICAL,INFO,DEBUG,NOTSET
 from typing import Dict, Any
 from tzlocal import get_localzone_name
 
@@ -13,7 +13,7 @@ from .模块_工具 import 加载json文件
     "字体.大小": 12,
 
     "日志.启用": True,
-    "日志.级别": CRITICAL,
+    "日志.级别": NOTSET,
     "日志.控制台": True,
     "日志.文件": True,
 

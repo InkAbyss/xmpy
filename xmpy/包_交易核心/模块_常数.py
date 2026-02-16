@@ -119,6 +119,62 @@ class 类_交易所(Enum):
     # 特殊功能
     本地数据 = "LOCAL"        # 本地生成数据
 
+    # -------------------------------------------------
+    """交易场所"""
+    # 中国境内
+    CFFEX = "CFFEX"  # 中国金融期货交易所
+    SHFE = "SHFE"  # 上海期货交易所
+    CZCE = "CZCE"  # 郑州商品交易所
+    DCE = "DCE"  # 大连商品交易所
+    INE = "INE"  # 上海国际能源交易中心
+    GFEX = "GFEX"  # 广州期货交易所
+    SSE = "SSE"  # 上海证券交易所
+    SZSE = "SZSE"  # 深圳证券交易所
+    BSE = "BSE"  # 北京证券交易所
+    SHHK = "SHHK"  # 沪深港通-上海
+    SZHK = "SZHK"  # 沪深港通-深圳
+    SGE = "SGE"  # 上海黄金交易所
+    WXE = "WXE"  # 无锡不锈钢交易中心
+    CFETS = "CFETS"  # 中国外汇交易中心
+    XBOND = "XBOND"  # X-Bond匿名交易系统
+
+    # 全球市场
+    SMART = "SMART"  # 美股智能路由
+    NYSE = "NYSE"  # 纽约证券交易所
+    NASDAQ = "NASDAQ"  # 纳斯达克交易所
+    ARCA = "ARCA"  # ARCA电子交易平台
+    EDGEA = "EDGEA"  # Direct Edge交易所
+    ISLAND = "ISLAND"  # 纳斯达克岛ECN
+    BATS = "BATS"  # Bats全球市场
+    IEX = "IEX"  # 投资者交易所
+    AMEX = "AMEX"  # 美国证券交易所
+    TSE = "TSE"  # 多伦多证券交易所
+    NYMEX = "NYMEX"  # 纽约商业交易所
+    COMEX = "COMEX"  # 芝加哥商品交易所COMEX
+    GLOBEX = "GLOBEX"  # CME Globex电子平台
+    IDEALPRO = "IDEALPRO"  # Interactive Brokers外汇ECN
+    CME = "CME"  # 芝加哥商品交易所
+    ICE = "ICE"  # 洲际交易所集团
+    SEHK = "SEHK"  # 香港联合交易所
+    HKFE = "HKFE"  # 香港期货交易所
+    SGX = "SGX"  # 新加坡交易所
+    CBT = "CBT"  # 芝加哥期货交易所
+    CBOE = "CBOE"  # 芝加哥期权交易所
+    CFE = "CFE"  # CBOE期货交易所
+    DME = "DME"  # 迪拜商品交易所
+    EUX = "EUX"  # 欧洲期货交易所
+    APEX = "APEX"  # 亚太交易所
+    LME = "LME"  # 伦敦金属交易所
+    BMD = "BMD"  # 马来西亚衍生品交易所
+    TOCOM = "TOCOM"  # 东京工业品交易所
+    EUNX = "EUNX"  # 泛欧交易所
+    KRX = "KRX"  # 韩国交易所
+    OTC = "OTC"  # 场外交易市场
+    IBKRATS = "IBKRATS"  # Interactive Brokers模拟交易
+
+    # 特殊功能
+    LOCAL = "LOCAL"  # 本地生成数据
+
 
 class 类_货币(Enum):
     """结算货币"""

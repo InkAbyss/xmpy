@@ -11,7 +11,6 @@ from datetime import datetime, time, timedelta
 from .模块_常数 import 类_周期
 from .模块_对象 import 类_K线数据,类_行情数据
 
-# from .模块_常数 import 类_交易所,类_周期
 from xmpy.包_交易核心.模块_常数 import 类_交易所
 
 if sys.version_info >= (3, 9):
@@ -108,13 +107,17 @@ def 虚拟方法(func: Callable) -> Callable:
     """
     return func
 
-def 提取合约代码(合约标识: str) -> Tuple[str, '类_交易所']:
+def 提取合约代码(合约_交易所: str) -> Tuple[str, '类_交易所']:
     """
     :return: (代码, 交易所)
     """
 
-    代码, 交易所字符串 = 合约标识.rsplit(".", 1)
+    代码, 交易所字符串 = 合约_交易所.rsplit(".", 1)
     return 代码, 类_交易所[交易所字符串]
+
+def 合约_交易所转英文(合约_交易所) -> str:
+    代码, 交易所 = 提取合约代码(合约_交易所)
+    return f"{代码}.{交易所.value}"
 
 def 四舍五入到指定值(数值: float, 目标值: float) -> float:
     """
@@ -505,6 +508,6 @@ def 处理合约信息(交易所名称: str = "全部") -> None:
 
 if __name__ == "__main__":
     # 使用示例
-    合约标识 = "TA506.郑商所"
-    代码, 交易所 = 提取合约代码(合约标识)
+    合约_交易所 = "TA506.郑商所"
+    代码, 交易所 = 提取合约代码(合约_交易所)
     print(f"代码: {代码}, 交易所对应字符串: {交易所}")
