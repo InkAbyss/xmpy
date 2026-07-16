@@ -8,7 +8,14 @@ xmpy—— 专为中文母语开发者打造的量化交易研发框架。
 
 为满足中文开发者对代码可读性与可维护性的需求，本项目以[vnpy-3.9.4](https://github.com/vnpy/vnpy/tree/3.9.4)为基础，进行了全面优化与重构。
 
+## 新增回测K线图
+<p align="center">
+  <img src="images/回测K线图_示例1.png" alt="示例1" width=80%/>
+  <br><br>
+  <img src="images/回测K线图_示例2.png" alt="示例2" width=80%/>
+</p>
 ## 接口
+
 * [CTP（ctp）](https://github.com/InkAbyss/xmpy_ctp)：国内期货、期权
 
 * TTS_CTP：openctp，提供国内期货（仿真），7*24小时数据（暂未上传）

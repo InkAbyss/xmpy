@@ -83,7 +83,9 @@ class 类_基础数据库(ABC):
             self,
             代码: str,
             交易所: 类_交易所,
-            周期: 类_周期
+            周期: 类_周期,
+            开始时间: datetime,
+            结束时间: datetime
     ) -> int:
         """删除指定K线数据"""
         pass
@@ -92,7 +94,9 @@ class 类_基础数据库(ABC):
     def 删除Tick数据(
             self,
             代码: str,
-            交易所: 类_交易所
+            交易所: 类_交易所,
+            开始时间: datetime,
+            结束时间: datetime
     ) -> int:
         """删除指定Tick数据"""
         pass

@@ -262,6 +262,25 @@ class 类_报价数据(基础数据):
 
 
 @dataclass
+class 类_手续费数据(基础数据):
+    """手续费率请求"""
+    
+    代码: str
+    交易所: 类_交易所
+    
+    开仓手续费率: float = 0
+    开仓手续费: float = 0
+    平仓手续费率: float = 0
+    平仓手续费: float = 0
+    平今手续费率: float = 0
+    平今手续费: float = 0
+
+    def __post_init__(self) -> None:
+        """生成唯一标识"""
+        self.合约_交易所: str = f"{self.代码}.{self.交易所.value}"
+        
+
+@dataclass
 class 类_订阅请求:
     """行情订阅请求"""
 
