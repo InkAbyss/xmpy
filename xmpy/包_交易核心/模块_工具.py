@@ -269,7 +269,7 @@ class 类_K线生成器:
 
         return 小时, 分钟
 
-    def _设置收盘定时器(self, 目标时间: datetime,夜盘 = False) -> None:
+    def _设置收盘定时器(self, 目标时间: datetime, 午盘 = False, 夜盘 = False) -> None:
         """启动一个定时器，在目标时间执行收盘回调"""
         if self.收盘定时器 is not None:
             return
@@ -285,6 +285,10 @@ class 类_K线生成器:
                         目标小时 += 1
                         目标分钟 -= 60
                     self.当前K线.时间戳 = self.最后Tick缓存.时间戳.replace(hour=目标小时, minute=目标分钟, second=0, microsecond=0)
+                elif 午盘:
+                    目标小时 = 11
+                    目标分钟 = 30
+                    self.当前K线.时间戳 = self.最后Tick缓存.时间戳.replace(hour=目标小时, minute=目标分钟, second=0,microsecond=0)
                 else:
                     目标小时 = self.日盘小时
                     目标分钟 = self.日盘分钟
@@ -366,6 +370,22 @@ class 类_K线生成器:
             self._更新K线数据(tick)
             return True
 
+        # 10:15临休
+        if self.当前K线 and tick.时间戳.hour == 10 and 15 <= tick.时间戳.minute <= 16:
+            self._更新K线数据(tick)
+            self.当前K线.时间戳 = self.最后Tick缓存.时间戳.replace(hour=10, minute=15, second=0, microsecond=0)
+            self.K线回调(self.当前K线)
+            self.当前K线 = None
+            return True
+
+        # 11:30午休
+        if self.当前K线 and tick.时间戳.hour == 11 and 30 <= tick.时间戳.minute <= 35:
+            self._更新K线数据(tick)
+            self.当前K线.时间戳 = self.最后Tick缓存.时间戳.replace(hour=11, minute=30, second=0, microsecond=0)
+            self.K线回调(self.当前K线)
+            self.当前K线 = None
+            return True
+
         # 日盘收盘（15:00 或 15:15后不再接受新数据）
         if self.当前K线 and tick.时间戳.hour == self.日盘小时 and 0 <= tick.时间戳.minute <= self.日盘分钟 + 6:
             self._更新K线数据(tick)
@@ -426,6 +446,28 @@ class 类_K线生成器:
             self._更新K线数据(tick)
             return True
 
+        # 10:15临休
+        if self.当前K线 and tick.时间戳.hour == 10 and 15 <= tick.时间戳.minute <= 16:
+            self._更新K线数据(tick)
+            self.当前K线.时间戳 = self.最后Tick缓存.时间戳.replace(hour=10, minute=15, second=0, microsecond=0)
+            self.K线回调(self.当前K线)
+            self.当前K线 = None
+            return True
+
+        # 11:30午休
+        if self.当前K线 and tick.时间戳.hour == 11 and tick.时间戳.minute == 29:
+            if self.收盘定时器 is None:
+                目标小时 = 11
+                目标分钟 = 29
+
+                目标分钟 += 7
+                if 目标分钟 >= 60:
+                    目标小时 += 1
+                    目标分钟 -= 60
+                目标时间 = datetime.now().replace(hour=目标小时, minute=目标分钟, second=0, microsecond=0)
+                self._设置收盘定时器(目标时间, 午盘 = True)
+                return False
+
         # 日盘收盘
         if self.当前K线 and tick.时间戳.hour == self.日盘小时 and tick.时间戳.minute == self.日盘分钟:
             if self.收盘定时器 is None:
@@ -455,7 +497,7 @@ class 类_K线生成器:
                 目标时间 = datetime.now().replace(hour=目标小时, minute=目标分钟, second=0, microsecond=0)
                 # print(f'看一下：{self.夜盘小时}   {self.夜盘分钟}')
                 # print(f'看一下2：{tick}')
-                self._设置收盘定时器(目标时间,夜盘=True)
+                self._设置收盘定时器(目标时间, 夜盘=True)
                 return False
 
         return False
@@ -876,6 +918,31 @@ def 生成交易对(交易列表: list) -> List[Dict[str, Any]]:
 
                 if 开仓记录["数量"] == 0:
                     多头交易列表.popleft()
+
+    # ---- 处理剩余未平仓持仓 ----
+    for 持仓 in 多头交易列表:
+        if 持仓["数量"] > 0:
+            交易对列表.append({
+                "开仓时间": 持仓["时间戳"] + timedelta(minutes=1),
+                "开仓价格": 持仓["价格"],
+                "平仓时间": None,  # 尚未平仓
+                "平仓价格": None,
+                "开仓方向": 类_方向.做多,
+                "平仓方向": None,
+                "数量": 持仓["数量"]
+            })
+
+    for 持仓 in 空头交易列表:
+        if 持仓["数量"] > 0:
+            交易对列表.append({
+                "开仓时间": 持仓["时间戳"] + timedelta(minutes=1),
+                "开仓价格": 持仓["价格"],
+                "平仓时间": None,
+                "平仓价格": None,
+                "开仓方向": 类_方向.做空,
+                "平仓方向": None,
+                "数量": 持仓["数量"]
+            })
 
     return 交易对列表
 

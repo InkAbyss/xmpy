@@ -1,7 +1,5 @@
 # xmpy量化框架
 
-xmpy—— 专为中文母语开发者打造的量化交易研发框架。
-
 ## 📖 项目背景
 
 初衷：最初是为了编写一个交易策略，在对比多个框架后选择了[vnpy](https://github.com/vnpy/vnpy)。其文档详尽，但入门仍需较长时间阅读文档和源码。考虑到我无需图形化界面，并希望以中文提升后续策略开发与维护的友好性，决定基于examples/no_ui/run.py进行全面中文重构。
@@ -13,6 +11,8 @@ xmpy—— 专为中文母语开发者打造的量化交易研发框架。
   <img src="images/回测K线图_示例1.png" alt="示例1" width=80%/>
   <br><br>
   <img src="images/回测K线图_示例2.png" alt="示例2" width=80%/>
+  <br><br>
+  <img src="images/回测K线图_示例3.png" alt="示例2" width=80%/>
 </p>
 ## 接口
 
@@ -198,10 +198,23 @@ def 运行父进程():
         # 非交易时段关闭子进程
         if not 是否交易时段 and 子进程 is not None:
             if not 子进程.is_alive():
+                子进程.join()
                 子进程 = None
                 print("子进程关闭成功")
 
-        sleep(5)
+            elif 子进程.is_alive():
+                print("检测到正在运行的子进程，关闭子进程")
+                子进程.terminate()  # 发送SIGTERM信号
+                子进程.join(timeout=5)  # 等待5秒正常退出
+
+                if 子进程.is_alive():  # 如果仍未退出
+                    print("子进程拒绝退出，强制杀死")
+                    子进程.kill()  # 发送SIGKILL信号
+                    子进程.join()
+                    print("执行强制杀死完毕")
+
+
+        sleep(15)
 
 
 if __name__ == "__main__":

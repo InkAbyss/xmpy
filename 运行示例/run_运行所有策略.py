@@ -124,10 +124,23 @@ def 运行父进程():
         # 非交易时段关闭子进程
         if not 是否交易时段 and 子进程 is not None:
             if not 子进程.is_alive():
+                子进程.join()
                 子进程 = None
                 print("子进程关闭成功")
 
-        sleep(5)
+            elif 子进程.is_alive():
+                print("检测到正在运行的子进程，关闭子进程")
+                子进程.terminate()  # 发送SIGTERM信号
+                子进程.join(timeout=5)  # 等待5秒正常退出
+
+                if 子进程.is_alive():  # 如果仍未退出
+                    print("子进程拒绝退出，强制杀死")
+                    子进程.kill()  # 发送SIGKILL信号
+                    子进程.join()
+                    print("执行强制杀死完毕")
+
+
+        sleep(15)
 
 
 if __name__ == "__main__":
